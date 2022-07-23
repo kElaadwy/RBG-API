@@ -1,3 +1,6 @@
+global using RBG_API.Models;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
