@@ -26,8 +26,7 @@ namespace RBG_API.Controllers
         [HttpGet]
         public  async Task<ActionResult<ServiceResponse<List<CharacterGetDto>>>> GetCharacters()
         {
-            int userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value);
-            return Ok(await _characterRepository.GetCharacters(userId));
+            return Ok(await _characterRepository.GetCharacters());
         }
 
         [HttpGet("{id}")]

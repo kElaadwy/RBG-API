@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using RBG_API.Data;
@@ -9,16 +10,18 @@ public class CharacterRepository : ICharacterRepository
 {
     private readonly DataContext _context;
     private readonly IMapper _mapper;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public CharacterRepository(DataContext context, IMapper mapper)
+    public CharacterRepository(DataContext context, IMapper mapper, IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
         _mapper = mapper;
+        _httpContextAccessor = httpContextAccessor;
     }
 
-    public  async Task<ServiceResponse<List<CharacterGetDto>>> GetCharacters(int userId)
+    public  async Task<ServiceResponse<List<CharacterGetDto>>> GetCharacters()
     {
-        var characters = await _context.Characters.Where(c => c.User.Id == userId).ToListAsync();
+        var characters = await _context.Characters.Where(c => c.User.Id == GetUserId()).ToListAsync();
 
         return new ServiceResponse<List<CharacterGetDto>>()
         {
@@ -29,7 +32,7 @@ public class CharacterRepository : ICharacterRepository
 
     public async Task<ServiceResponse<CharacterGetDto>> GetCharacter(int id)
     {
-        var character = await _context.Characters.FirstOrDefaultAsync(c => c.Id == id);
+        var character = await _context.Characters.FirstOrDefaultAsync(c => c.Id == id && c.User.Id == GetUserId());
         
         return new ServiceResponse<CharacterGetDto>()
         {
@@ -37,16 +40,19 @@ public class CharacterRepository : ICharacterRepository
         }; 
     }
 
-    public async Task<ServiceResponse<List<CharacterGetDto>>> AddCharacter(CharacterAddDto character)
+    public async Task<ServiceResponse<List<CharacterGetDto>>> AddCharacter(CharacterAddDto caracterAdd)
     {
-        _context.Characters.Add(_mapper.Map<Character>(character));
+        Character character = _mapper.Map<Character>(caracterAdd);
+        character.User = await _context.Users.FirstOrDefaultAsync(u => u.Id == GetUserId());
+        _context.Characters.Add(character);
         await _context.SaveChangesAsync();
 
         return new ServiceResponse<List<CharacterGetDto>>()
         {
             Data = await _context.Characters
-            .Select(c => _mapper.Map<CharacterGetDto>(c))
-            .ToListAsync()
+                .Where(c => c.User.Id == GetUserId())
+                .Select(c => _mapper.Map<CharacterGetDto>(c))
+                .ToListAsync()
         };
     }
 
@@ -55,15 +61,24 @@ public class CharacterRepository : ICharacterRepository
         var response = new ServiceResponse<CharacterGetDto>();
         try
         {
-            Character OldCharacter = await _context.Characters.FirstOrDefaultAsync(c => c.Id == character.Id);
+            Character OldCharacter = await _context.Characters
+                .FirstOrDefaultAsync(c => c.Id == character.Id && c.User.Id == GetUserId());
 
+            if(OldCharacter is null)
+            {
+                response.Sucess = false;
+                response.Message = "character is not found!";
+
+                return response;
+            }
+            
             OldCharacter.Name = character.Name;
             OldCharacter.HitPoints = character.HitPoints;
             OldCharacter.Strength = character.Strength;
             OldCharacter.Defence = character.Defence;
             OldCharacter.Intelligence = character.Intelligence;
             OldCharacter.Class = character.Class;
-        
+
             await _context.SaveChangesAsync();
             response.Data = _mapper.Map<CharacterGetDto>(OldCharacter);
 
@@ -80,11 +95,23 @@ public class CharacterRepository : ICharacterRepository
         var response = new ServiceResponse<List<CharacterGetDto>>();
         try
         {
-            var character = await _context.Characters.FirstAsync(c => c.Id == id);
+            var character = await _context.Characters
+                .FirstOrDefaultAsync(c => c.Id == id && c.User.Id == GetUserId());
+
+            if(character is null)
+            {
+                response.Sucess = false;
+                response.Message ="character is not found!";
+                return response;
+            }
+
             _context.Characters.Remove(character);
             await _context.SaveChangesAsync();
 
-        response.Data = await _context.Characters.Select(c=> _mapper.Map<CharacterGetDto>(c)).ToListAsync();
+            response.Data = await _context.Characters
+                .Where(c => c.User.Id == GetUserId())
+                .Select(c=> _mapper.Map<CharacterGetDto>(c))
+                .ToListAsync();
 
         } catch(Exception e)
         {
@@ -92,6 +119,10 @@ public class CharacterRepository : ICharacterRepository
             response.Message = e.Message;
         }
         return response;
+    }
 
+    private int GetUserId()
+    {
+        return int.Parse(_httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier));
     }
 }

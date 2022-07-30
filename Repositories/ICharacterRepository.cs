@@ -4,7 +4,7 @@ namespace RBG_API.Repositories
 {
     public interface ICharacterRepository
     {
-        Task<ServiceResponse<List<CharacterGetDto>>> GetCharacters(int userId);
+        Task<ServiceResponse<List<CharacterGetDto>>> GetCharacters();
         Task<ServiceResponse<CharacterGetDto>> GetCharacter(int id);
         Task<ServiceResponse<List<CharacterGetDto>>> AddCharacter(CharacterAddDto character);
         Task<ServiceResponse<CharacterGetDto>> UpdateCharacter(CharacterUpdateDto character);
