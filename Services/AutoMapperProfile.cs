@@ -14,6 +14,8 @@ namespace RBG_API.Services
             CreateMap<Character, CharacterGetDto>();
             CreateMap<CharacterAddDto, Character>();
             CreateMap<CharacterUpdateDto,Character>();
+            CreateMap<WeaponAddDto, Weapon>();
+            CreateMap<Weapon, WeaponGetDto>();
 
         }
     }
