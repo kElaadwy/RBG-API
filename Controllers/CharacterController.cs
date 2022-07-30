@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RBG_API.Dtos;
 using RBG_API.Repositories;
 
 namespace RBG_API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CharacterController: ControllerBase
@@ -23,7 +26,8 @@ namespace RBG_API.Controllers
         [HttpGet]
         public  async Task<ActionResult<ServiceResponse<List<CharacterGetDto>>>> GetCharacters()
         {
-            return Ok(await _characterRepository.GetCharacters());
+            int userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value);
+            return Ok(await _characterRepository.GetCharacters(userId));
         }
 
         [HttpGet("{id}")]

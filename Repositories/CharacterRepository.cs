@@ -16,9 +16,9 @@ public class CharacterRepository : ICharacterRepository
         _mapper = mapper;
     }
 
-    public  async Task<ServiceResponse<List<CharacterGetDto>>> GetCharacters()
+    public  async Task<ServiceResponse<List<CharacterGetDto>>> GetCharacters(int userId)
     {
-        var characters = await _context.Characters.ToListAsync();
+        var characters = await _context.Characters.Where(c => c.User.Id == userId).ToListAsync();
 
         return new ServiceResponse<List<CharacterGetDto>>()
         {
@@ -59,7 +59,7 @@ public class CharacterRepository : ICharacterRepository
 
             OldCharacter.Name = character.Name;
             OldCharacter.HitPoints = character.HitPoints;
-            OldCharacter.Stringth = character.Stringth;
+            OldCharacter.Strength = character.Strength;
             OldCharacter.Defence = character.Defence;
             OldCharacter.Intelligence = character.Intelligence;
             OldCharacter.Class = character.Class;
